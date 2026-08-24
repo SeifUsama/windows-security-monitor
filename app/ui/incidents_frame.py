@@ -58,8 +58,8 @@ class IncidentsFrame(ctk.CTkFrame):
         # Main split
         split = ctk.CTkFrame(self, fg_color="transparent")
         split.pack(fill="both", expand=True, padx=8, pady=4)
-        split.grid_columnconfigure(0, weight=1)
-        split.grid_columnconfigure(1, weight=2)
+        split.grid_columnconfigure(0, weight=1, uniform="incident_split")
+        split.grid_columnconfigure(1, weight=2, uniform="incident_split")
         split.grid_rowconfigure(0, weight=1)
 
         # --- Left: Incident list ---
@@ -105,16 +105,17 @@ class IncidentsFrame(ctk.CTkFrame):
         vsb = ttk.Scrollbar(left, orient="vertical")
         self._list_tree = ttk.Treeview(
             left,
-            columns=("id", "type", "severity", "user", "time", "status"),
+            columns=("id", "type", "mitre", "severity", "user", "time", "status"),
             show="headings", style="Inc.Treeview",
             yscrollcommand=vsb.set,
         )
         vsb.config(command=self._list_tree.yview)
 
         for col, w, label in [
-            ("id", 35, "#"), ("type", 130, "Type"),
-            ("severity", 70, "Severity"), ("user", 100, "Username"),
-            ("time", 130, "Last Seen"), ("status", 85, "Status"),
+            ("id", 35, "#"), ("type", 110, "Type"),
+            ("mitre", 110, "MITRE Tactic"), ("severity", 65, "Severity"),
+            ("user", 85, "Username"), ("time", 115, "Last Seen"),
+            ("status", 80, "Status"),
         ]:
             self._list_tree.heading(col, text=label)
             self._list_tree.column(col, width=w, anchor="center")
@@ -168,6 +169,7 @@ class IncidentsFrame(ctk.CTkFrame):
             self._list_tree.insert("", "end", iid=str(d["id"]), values=(
                 d["id"],
                 f"{icon} {d.get('attack_type', '').replace('_', ' ')}",
+                d.get("mitre_tactic") or "—",
                 sev,
                 d.get("username") or "—",
                 str(d.get("last_seen", ""))[:16],

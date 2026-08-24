@@ -16,7 +16,7 @@ from typing import List, Dict, Any
 from app.ui.widgets.severity_badge import get_severity_colors
 
 
-class TimelineWidget(ctk.CTkScrollableFrame):
+class TimelineWidget(ctk.CTkFrame):
     """
     Vertical timeline showing events and the detected attack.
     
@@ -27,7 +27,9 @@ class TimelineWidget(ctk.CTkScrollableFrame):
     """
 
     def __init__(self, master, **kwargs):
-        super().__init__(master, fg_color="transparent", **kwargs)
+        # Explicitly configure default background to transparent if not specified
+        kwargs.setdefault("fg_color", "transparent")
+        super().__init__(master, **kwargs)
         self._items: List[ctk.CTkFrame] = []
 
     def load_timeline(
