@@ -72,6 +72,8 @@ class AccountCreatedRule:
             "description":      description,
             "detection_rule":   self.RULE_ID,
             "detection_reason": detection_reason,
+            "mitre_tactic":     "Persistence (TA0003)",
+            "mitre_technique":  "Create Account (T1136)",
             "event_count":      1,
             "is_demo":          is_demo,
             "_related_events":  [ev],

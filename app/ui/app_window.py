@@ -62,6 +62,14 @@ class AppWindow(ctk.CTk):
         # Setup UI
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
+        
+        # Configure ttk style theme to clam to fix invisible text on Windows tables
+        try:
+            from tkinter import ttk
+            style = ttk.Style()
+            style.theme_use("clam")
+        except Exception as e:
+            log.warning("Failed to configure ttk theme to clam: %s", e)
 
         self.title("Windows Security Monitor — Fundamentals of Cybersecurity")
         self.geometry("1280x800")
@@ -112,7 +120,6 @@ class AppWindow(ctk.CTk):
             ("live_monitor",  "🔴  Live Monitor"),
             ("incidents",     "🚨  Incidents"),
             ("search",        "🔍  Search"),
-            ("analytics",     "📈  Analytics"),
             ("config",        "⚙️   Config"),
         ]
         for page_id, label in nav_items:
@@ -197,9 +204,6 @@ class AppWindow(ctk.CTk):
             elif page_id == "search":
                 from app.ui.search_frame       import SearchFrame
                 self._frames[page_id] = SearchFrame(self._content, app=self)
-            elif page_id == "analytics":
-                from app.ui.analytics_frame    import AnalyticsFrame
-                self._frames[page_id] = AnalyticsFrame(self._content, app=self)
             elif page_id == "config":
                 from app.ui.config_frame       import ConfigFrame
                 self._frames[page_id] = ConfigFrame(self._content, app=self)
@@ -431,8 +435,6 @@ class AppWindow(ctk.CTk):
                 if page_id == "dashboard":
                     frame.refresh(is_demo=False)
                 elif page_id == "incidents":
-                    frame.refresh(is_demo=False)
-                elif page_id == "analytics":
                     frame.refresh(is_demo=False)
                 elif page_id == "live_monitor":
                     frame._refresh_events()

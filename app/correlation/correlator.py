@@ -197,6 +197,8 @@ class CorrelationEngine:
             "description":      description,
             "detection_rule":   "CORRELATION_001",
             "detection_reason": detection_reason,
+            "mitre_tactic":     "Credential Access (TA0006)",
+            "mitre_technique":  "Brute Force (T1110)",
             "event_count":      bf_count + 1,
             "is_demo":          is_demo,
         }

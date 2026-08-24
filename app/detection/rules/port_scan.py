@@ -153,6 +153,8 @@ class PortScanRule:
             "description":      description,
             "detection_rule":   self.RULE_ID,
             "detection_reason": detection_reason,
+            "mitre_tactic":     "Reconnaissance (TA0043)",
+            "mitre_technique":  "Active Scanning (T1595)",
             "event_count":      len(events),
             "is_demo":          is_demo,
             "_related_events":  events,

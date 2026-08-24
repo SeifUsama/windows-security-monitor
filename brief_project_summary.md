@@ -10,8 +10,18 @@ $$\text{Collect (wevtutil / Desktop Watcher)} \longrightarrow \text{Parse/Normal
 
 ## 🛠️ Implemented Features & How to Test Them
 
-### 1. Brute Force Detection (BRUTE_FORCE_001)
-* **Description:** Identifies $\ge 5$ failed logons from the same IP targeting the same user within 60 seconds.
+### 1. MITRE ATT&CK Mapping (New Feature)
+All incident types are automatically mapped to standard MITRE ATT&CK tactics and techniques. This information is saved directly in the SQLite database and displayed in the incident details card:
+* **Brute Force & Account Lockout:** Credential Access (TA0006) $\longrightarrow$ Brute Force (T1110)
+* **Privilege Escalation:** Privilege Escalation (TA0004) $\longrightarrow$ Valid Accounts (T1078)
+* **Unauthorized Account:** Persistence (TA0003) $\longrightarrow$ Create Account (T1136)
+* **Port Scan:** Reconnaissance (TA0043) $\longrightarrow$ Active Scanning (T1595)
+* **File Integrity:** Defense Evasion (TA0005) $\longrightarrow$ File and Directory Permissions Modification (T1222)
+
+---
+
+### 2. Brute Force Detection (BRUTE_FORCE_001)
+* **MITRE ATT&CK:** Tactic: Credential Access (TA0006) | Technique: Brute Force (T1110)
 * **How to Test Locally:**
   Open a standard PowerShell window and run the following loop to trigger 5 logon failures:
   ```powershell
@@ -21,8 +31,8 @@ $$\text{Collect (wevtutil / Desktop Watcher)} \longrightarrow \text{Parse/Normal
 
 ---
 
-### 2. Account Lockout Detection (LOCKOUT_001)
-* **Description:** Detects Event `4740` (Account Locked Out) and correlates it with brute force.
+### 3. Account Lockout Detection (LOCKOUT_001)
+* **MITRE ATT&CK:** Tactic: Credential Access (TA0006) | Technique: Brute Force (T1110)
 * **How to Test Locally:**
   If your Windows local security policy has a lockout threshold enabled (e.g. 5 attempts), create a test account and brute-force it:
   ```powershell
@@ -39,9 +49,8 @@ $$\text{Collect (wevtutil / Desktop Watcher)} \longrightarrow \text{Parse/Normal
 
 ---
 
-### 3. Privilege Escalation Detection (PRIVILEGE_001)
-* **Description:** Detects special privilege assignments (`Event 4672`). 
-* **Note on Windows Behavior:** Simply right-clicking a program and selecting "Run as Administrator" elevates your current process token, but it **does not** create a new logon session. Therefore, Windows does *not* log `Event 4672` (Privilege Assignment to New Logon).
+### 4. Privilege Escalation Detection (PRIVILEGE_001)
+* **MITRE ATT&CK:** Tactic: Privilege Escalation (TA0004) | Technique: Valid Accounts (T1078)
 * **How to Test/Force-Trigger Locally:**
   To force Windows to create a new logon session under the `SYSTEM` account, run this scheduled task script in **Administrator PowerShell**:
   ```powershell
@@ -58,8 +67,8 @@ $$\text{Collect (wevtutil / Desktop Watcher)} \longrightarrow \text{Parse/Normal
 
 ---
 
-### 4. Account Creation Detection (NEWACCOUNT_001)
-* **Description:** Detects local user accounts being created (`Event 4720`) and enabled (`Event 4722`). Both events display as **HIGH** severity on the event grid.
+### 5. Account Creation Detection (NEWACCOUNT_001)
+* **MITRE ATT&CK:** Tactic: Persistence (TA0003) | Technique: Create Account (T1136)
 * **How to Test Locally:**
   Open **PowerShell as Administrator** and add a new user:
   ```powershell
@@ -70,14 +79,14 @@ $$\text{Collect (wevtutil / Desktop Watcher)} \longrightarrow \text{Parse/Normal
 
 ---
 
-### 5. Port Scan Detection (PORTSCAN_001)
-* **Description:** Detects dropped network packets on $\ge 10$ unique ports from the same source IP within 30 seconds.
+### 6. Port Scan Detection (PORTSCAN_001)
+* **MITRE ATT&CK:** Tactic: Reconnaissance (TA0043) | Technique: Active Scanning (T1595)
 * **How to Test Locally:**
   1. Enable dropped connection logging in Windows Firewall (Run in **Admin PowerShell**):
      ```powershell
      netsh advfirewall set currentprofile logging droppedconnections enable
      ```
-  2. Run the following port scan script in PowerShell targeting 15 closed local ports:
+  2. Run the following port scan script targeting 15 closed local ports:
      ```powershell
      1..15 | ForEach-Object {
          try {
@@ -96,24 +105,14 @@ $$\text{Collect (wevtutil / Desktop Watcher)} \longrightarrow \text{Parse/Normal
 
 ---
 
-### 6. File Integrity Auditing (FILE_INTEGRITY_001)
-* **Description:** Monitors file/folder creations, edits, and deletions (`Event 4663`) on watched directories.
-* **How to Test Locally:**
-  
-  #### Option A: Local Desktop Watcher (Zero Configuration needed)
+### 7. File Integrity Auditing (FILE_INTEGRITY_001)
+* **MITRE ATT&CK:** Tactic: Defense Evasion (TA0005) | Technique: File and Directory Permissions Modification (T1222)
+* **How to Test Locally (Desktop Watcher):**
   1. Start monitoring in the tool.
   2. Go to your **Desktop** and perform file actions:
      * **Create:** Right-click $\rightarrow$ New $\rightarrow$ Folder.
      * **Edit:** Create a text file, open it, add some text, and save.
      * **Delete:** Drag the file/folder to the Recycle Bin.
-  
-  #### Option B: Watching Specific System Files (e.g. `etc/hosts`)
-  1. Enable Object Access Auditing in Windows (Run in **Admin PowerShell**):
-     ```powershell
-     auditpol /set /subcategory:"File System" /success:enable /failure:enable
-     ```
-  2. Make sure `settings.ini` has `watch_paths = hosts` under `[file_integrity]`.
-  3. Open Notepad as Administrator, open `C:\Windows\System32\drivers\etc\hosts`, add a comment at the bottom (e.g. `# test`), and save.
 * **Expected Result:** A `FILE_INTEGRITY` incident will trigger, detailing the action, user, and process name.
 
 ---

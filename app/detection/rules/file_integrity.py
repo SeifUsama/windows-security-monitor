@@ -115,6 +115,8 @@ class FileIntegrityRule:
             "description":      description,
             "detection_rule":   self.RULE_ID,
             "detection_reason": detection_reason,
+            "mitre_tactic":     "Defense Evasion (TA0005)",
+            "mitre_technique":  "File and Directory Permissions Modification (T1222)",
             "event_count":      1,
             "is_demo":          bool(ev.get("is_demo")),
             "_related_events":  [ev],

@@ -82,6 +82,8 @@ class PrivilegeAssignmentRule:
             "description":      description,
             "detection_rule":   self.RULE_ID,
             "detection_reason": detection_reason,
+            "mitre_tactic":     "Privilege Escalation (TA0004)",
+            "mitre_technique":  "Valid Accounts (T1078)",
             "event_count":      1,
             "is_demo":          is_demo,
             "_related_events":  [ev],

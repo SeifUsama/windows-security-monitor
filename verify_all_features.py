@@ -38,7 +38,7 @@ print("="*65)
 print("\n[ 1 ] IMPORTS & DEPENDENCIES")
 # ──────────────────────────────────────────────────────────────
 def check_imports():
-    import customtkinter, matplotlib, PIL, reportlab
+    import customtkinter, matplotlib, PIL
     return f"customtkinter {customtkinter.__version__}, matplotlib {matplotlib.__version__}"
 check("Core packages import", check_imports)
 
@@ -62,8 +62,6 @@ def check_all_app_modules():
     from app.detection.engine import DetectionEngine
     from app.correlation.correlator import CorrelationEngine
     from app.demo_loader import DemoLoader
-    from app.reports.csv_exporter import export_events_to_csv, export_incident_to_csv
-    from app.reports.pdf_exporter import export_incident_to_pdf, REPORTLAB_AVAILABLE
     from demo_data.scenarios import get_demo_events
     return "All 20 modules imported successfully"
 check("All app modules import", check_all_app_modules)
@@ -744,74 +742,6 @@ def check_full_demo_pipeline():
     return (f"{result['events']} events, {result['incidents']} incidents | "
             f"types={sorted(types)} | all linked ✓ | reload idempotent ✓")
 check("Full demo pipeline (end-to-end)", check_full_demo_pipeline)
-
-# ──────────────────────────────────────────────────────────────
-print("\n[ 10 ] CSV & PDF EXPORTS")
-# ──────────────────────────────────────────────────────────────
-def check_csv_events_export():
-    from app.reports.csv_exporter import export_events_to_csv
-    events = [
-        {"id": 1, "timestamp": datetime.utcnow(), "source_log": "Security",
-         "event_id": 4625, "level": "Audit Failure", "username": "admin",
-         "source_ip": "1.2.3.4", "message": "Test", "severity": "HIGH",
-         "description": "Failed Logon", "is_demo": False},
-    ]
-    tmp = tempfile.NamedTemporaryFile(suffix=".csv", delete=False)
-    tmp.close()
-    ok = export_events_to_csv(events, tmp.name)
-    assert ok
-    with open(tmp.name, encoding="utf-8") as f:
-        content = f.read()
-    assert "admin" in content
-    assert "Security" in content
-    assert "4625" in content
-    os.unlink(tmp.name)
-    return f"CSV export: {len(content)} bytes, fields verified"
-check("CSV events export", check_csv_events_export)
-
-def check_csv_incident_export():
-    from app.reports.csv_exporter import export_incident_to_csv
-    incident = {"id": 1, "attack_type": "BRUTE_FORCE", "severity": "HIGH",
-                "username": "admin", "source_ip": "1.2.3.4",
-                "detection_rule": "BRUTE_FORCE_001", "detection_reason": "Test reason",
-                "event_count": 5, "is_demo": False}
-    related = [{"id": 1, "event_id": 4625, "username": "admin", "source_ip": "1.2.3.4",
-                "timestamp": datetime.utcnow(), "description": "Failed Logon",
-                "source_log": "Security", "severity": "HIGH", "is_demo": False}]
-    tmp = tempfile.NamedTemporaryFile(suffix=".csv", delete=False)
-    tmp.close()
-    ok = export_incident_to_csv(incident, related, tmp.name)
-    assert ok
-    with open(tmp.name, encoding="utf-8") as f:
-        content = f.read()
-    assert "BRUTE_FORCE" in content
-    assert "BRUTE_FORCE_001" in content
-    os.unlink(tmp.name)
-    return "Incident CSV with related events exported correctly"
-check("CSV incident export", check_csv_incident_export)
-
-def check_pdf_export():
-    from app.reports.pdf_exporter import export_incident_to_pdf, REPORTLAB_AVAILABLE
-    if not REPORTLAB_AVAILABLE:
-        warn("PDF export", "ReportLab not installed — PDF export disabled")
-        return
-    incident = {"id": 1, "attack_type": "BRUTE_FORCE", "severity": "HIGH",
-                "username": "admin", "source_ip": "1.2.3.4",
-                "first_seen": datetime.utcnow(), "last_seen": datetime.utcnow(),
-                "detection_rule": "BRUTE_FORCE_001", "detection_reason": "Test reason",
-                "event_count": 5, "is_demo": True, "description": "Test brute force",
-                "status": "NEW"}
-    related = [{"id": 1, "event_id": 4625, "username": "admin", "source_ip": "1.2.3.4",
-                "timestamp": datetime.utcnow(), "description": "Failed Logon", "is_demo": True}]
-    tmp = tempfile.NamedTemporaryFile(suffix=".pdf", delete=False)
-    tmp.close()
-    ok = export_incident_to_pdf(incident, related, tmp.name)
-    assert ok
-    size = os.path.getsize(tmp.name)
-    assert size > 1000, f"PDF too small: {size} bytes"
-    os.unlink(tmp.name)
-    return f"PDF report generated ({size} bytes)"
-check("PDF incident report", check_pdf_export)
 
 # ──────────────────────────────────────────────────────────────
 print("\n[ 11 ] REAL WINDOWS LOG COLLECTORS (live check)")

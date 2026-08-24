@@ -1,4 +1,4 @@
-﻿"""
+"""
 app/ui/incidents_frame.py
 --------------------------
 Incidents list and detail pane.
@@ -20,8 +20,6 @@ from typing import TYPE_CHECKING, Optional, List, Dict, Any
 from app.ui.widgets.timeline_widget import TimelineWidget
 from app.ui.widgets.severity_badge import get_severity_colors
 from app.ui.widgets.raw_event_viewer import RawEventViewer
-from app.reports.csv_exporter import export_incident_to_csv
-from app.reports.pdf_exporter import export_incident_to_pdf
 
 if TYPE_CHECKING:
     from app.ui.app_window import AppWindow
@@ -248,6 +246,8 @@ class IncidentsFrame(ctk.CTkFrame):
 
         _field_row(summary, "Severity",       sev, sev_bg)
         _field_row(summary, "Status",         d.get("status", "—"))
+        _field_row(summary, "MITRE Tactic",   d.get("mitre_tactic") or "—", color="#a3daff")
+        _field_row(summary, "MITRE Technique",d.get("mitre_technique") or "—", color="#ffc9c9")
         _field_row(summary, "Detection Rule", d.get("detection_rule", "—"))
         _field_row(summary, "Source IP",      d.get("source_ip") or "Not Available")
         _field_row(summary, "Target Username",d.get("username") or "—")
@@ -353,18 +353,6 @@ class IncidentsFrame(ctk.CTkFrame):
             command=lambda: self._update_status(incident_id, "FALSE_POSITIVE"),
         ).pack(side="left", padx=4)
 
-        ctk.CTkButton(
-            btn_frame, text="📄 Export CSV",
-            fg_color="#0f3460", hover_color="#16213e", width=120,
-            command=lambda: self._export_csv(incident_id),
-        ).pack(side="left", padx=4)
-
-        ctk.CTkButton(
-            btn_frame, text="📋 Export PDF",
-            fg_color="#0f3460", hover_color="#16213e", width=120,
-            command=lambda: self._export_pdf(incident_id),
-        ).pack(side="left", padx=4)
-
     def _view_raw_from_tree(self, tree: ttk.Treeview) -> None:
         sel = tree.selection()
         if not sel:
@@ -381,36 +369,4 @@ class IncidentsFrame(ctk.CTkFrame):
         self.app.db.update_incident_status(incident_id, status)
         self.refresh()
         self._show_incident_detail(incident_id)
-
-    def _export_csv(self, incident_id: int) -> None:
-        path = filedialog.asksaveasfilename(
-            defaultextension=".csv",
-            filetypes=[("CSV files", "*.csv")],
-            initialfile=f"incident_{incident_id}.csv",
-        )
-        if not path:
-            return
-        inc    = self.app.db.get_incident_by_id(incident_id)
-        events = self.app.db.get_incident_events(incident_id)
-        ok = export_incident_to_csv(inc, events, path)
-        if ok:
-            messagebox.showinfo("Export", f"Incident exported to:\n{path}")
-        else:
-            messagebox.showerror("Export Failed", "Could not export the incident.")
-
-    def _export_pdf(self, incident_id: int) -> None:
-        path = filedialog.asksaveasfilename(
-            defaultextension=".pdf",
-            filetypes=[("PDF files", "*.pdf")],
-            initialfile=f"incident_{incident_id}.pdf",
-        )
-        if not path:
-            return
-        inc    = self.app.db.get_incident_by_id(incident_id)
-        events = self.app.db.get_incident_events(incident_id)
-        ok = export_incident_to_pdf(inc, events, path)
-        if ok:
-            messagebox.showinfo("Export", f"PDF report saved to:\n{path}")
-        else:
-            messagebox.showerror("Export Failed", "PDF export failed. Check that ReportLab is installed.")
 

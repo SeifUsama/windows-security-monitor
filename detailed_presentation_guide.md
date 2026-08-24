@@ -4,7 +4,20 @@ This guide is structured from the **most important/core technical features** dow
 
 ---
 
-## 1. Threat Correlation Engine (Most Critical Core Feature)
+## 1. MITRE ATT&CK Mapping Integration
+The SIEM tool integrates **MITRE ATT&CK Mapping** natively into the detection logic and database schema. 
+* **Database Schema Update:** The `incidents` table contains two dedicated columns: `mitre_tactic` and `mitre_technique`.
+* **Automatic Mapping:** As incidents flow through the detection engine, the corresponding rule populates the MITRE values:
+  * **Brute Force / Lockout:** Credential Access (TA0006) $\longrightarrow$ Brute Force (T1110)
+  * **Privilege Escalation:** Privilege Escalation (TA0004) $\longrightarrow$ Valid Accounts (T1078)
+  * **Account Creation:** Persistence (TA0003) $\longrightarrow$ Create Account (T1136)
+  * **Port Scan:** Reconnaissance (TA0043) $\longrightarrow$ Active Scanning (T1595)
+  * **File Integrity:** Defense Evasion (TA0005) $\longrightarrow$ File and Directory Permissions Modification (T1222)
+* **GUI Display:** The Incident details pane dynamically displays these mappings in the Incident Summary card, providing professional cybersecurity context.
+
+---
+
+## 2. Threat Correlation Engine (Most Critical Core Feature)
 The **Correlation Engine** (`correlator.py`) is the brain of the project. Rather than just raising independent alerts, it connects dots in a time window to identify unified threat scenarios.
 
 ### Key Concepts to Present:
@@ -32,7 +45,7 @@ net user TargetTest /delete
 
 ---
 
-## 2. Real-time File/Folder Desktop Watcher
+## 3. Real-time File/Folder Desktop Watcher
 * **The Challenge:** Windows Security Log File Auditing (`Event ID 4663`) is highly secure but requires administrative privileges and configuring System Access Control Lists (SACLs) manually on target folders.
 * **The Solution (Desktop Watcher):** 
   * We built a native Python collector (`DesktopCollector`) that watches your Windows Desktop folder (`C:\Users\User\Desktop`) in real-time.
@@ -56,7 +69,13 @@ net user TargetTest /delete
 
 ---
 
-## 3. Event Normalization & Database Architecture (Core Data Pipeline)
+## 4. UI Style and Theme Engine
+* **Ttk Theme Configuration:** On Windows, standard `ttk.Treeview` tables default to a system theme that ignores manual styling and renders white backgrounds with light text, making content invisible.
+* **The Fix:** The app initializes the `clam` theme globally (`style.theme_use("clam")`). This fixes the rendering treeviews inside scrollable panels, allowing custom dark colors, grid lines, and column layouts to draw perfectly.
+
+---
+
+## 5. Event Normalization & Database Architecture (Core Data Pipeline)
 Windows Event Logs are inherently complex, nested, and verbose XML structures. The tool extracts, simplifies, and maps these into a flat structure.
 
 ### Key Concepts to Present:
@@ -70,21 +89,7 @@ Windows Event Logs are inherently complex, nested, and verbose XML structures. T
 
 ---
 
-## 4. Incremental Collection & Checkpointing
-Reading massive Windows log files continuously causes high CPU and disk utilization. The tool implements a stateful collection checkpoint mechanism.
-
-### Key Concepts to Present:
-* **The Checkpoint Table:**
-  * Stores the `last_timestamp` and `last_record_number` successfully fetched from each active log channel.
-* **Dynamic XPath Queries:**
-  * Instead of querying all logs, `wevtutil` is invoked dynamically using custom XPath filters targeting only specific Event IDs since the last checkpoint:
-    ```xpath
-    *[System[(EventID=4624 or EventID=4625) and TimeCreated[@SystemTime>='2026-08-23T19:00:00.000Z']]]
-    ```
-
----
-
-## 5. Security Detection Rules (Specific Auditing Logic)
+## 6. Security Detection Rules (Specific Auditing Logic)
 Rules are applied batch-by-batch against new events. They contain custom detection parameters configured in `settings.ini`.
 
 * **Brute Force (HIGH):** Groups events in a sliding time window by `(username, source_ip)`. 
@@ -133,16 +138,6 @@ Rules are applied batch-by-batch against new events. They contain custom detecti
 
 ---
 
-## 6. Least-Privilege & Graceful Degradation Model
-A major academic SIEM project requirement is that it should not break or crash when running on lower-privileged environments.
-
-### Key Concepts to Present:
-* **Graceful Degradation:**
-  * If a user runs the app without administrative rights, collecting the Security Event Log returns an `Access Denied` error (`exit code 5`).
-  * The collector catches the `PermissionError`, changes its state to `access_denied = True`, logs a warnings label in the GUI status bar, and **continues running other logs** (System, Application, Desktop Watcher, and Demo Mode) smoothly.
-
----
-
 ## 7. Demo Mode Engine
 To showcase the tool during a presentation without triggering real attacks, the app supports a fully integrated Demo Mode.
 
@@ -151,10 +146,3 @@ To showcase the tool during a presentation without triggering real attacks, the 
   * Demo Mode is **not** a mock GUI screen.
   * It generates synthetic events representing a brute-force attack, lockout, new user creation, privilege escalation, and file modifications.
   * These synthetic events are inserted into the database and fed directly through the **real** detection and correlation engines, demonstrating the exact performance of the live SIEM pipeline.
-
----
-
-## 8. GUI Visualization & Analytics Reports (Peripheral Features)
-* **Interactive Timeline Widget:** Draws a custom step-by-step graphical timeline diagram of all contributing event blocks leading to a correlation threat incident.
-* **Report Exporters:** Generates professional, ready-to-print forensic PDF reports using ReportLab flowable paragraphs and grids, along with CSV exports for spreadsheet analysis.
-* **Forensic Search:** An advanced database query frame supporting filtering by username, IP, keyword, time range, log source, and severity.

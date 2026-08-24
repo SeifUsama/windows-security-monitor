@@ -73,6 +73,8 @@ class AccountLockoutRule:
             "description":      description,
             "detection_rule":   self.RULE_ID,
             "detection_reason": detection_reason,
+            "mitre_tactic":     "Credential Access (TA0006)",
+            "mitre_technique":  "Brute Force (T1110)",
             "event_count":      1,
             "is_demo":          is_demo,
             "_related_events":  [ev],

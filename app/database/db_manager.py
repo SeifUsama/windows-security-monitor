@@ -68,6 +68,8 @@ CREATE TABLE IF NOT EXISTS incidents (
     description      TEXT,
     detection_rule   TEXT,
     detection_reason TEXT,
+    mitre_tactic     TEXT,
+    mitre_technique  TEXT,
     event_count      INTEGER DEFAULT 0,
     is_demo          INTEGER DEFAULT 0,
     created_at       TEXT DEFAULT (datetime('now'))
@@ -123,6 +125,19 @@ class DatabaseManager:
             conn = self.get_connection()
             conn.executescript(SCHEMA_SQL)
             conn.commit()
+            
+            # Migration to add MITRE ATT&CK columns if they don't exist in the existing db file
+            try:
+                cursor = conn.execute("PRAGMA table_info(incidents)")
+                columns = [row["name"] for row in cursor.fetchall()]
+                if "mitre_tactic" not in columns:
+                    conn.execute("ALTER TABLE incidents ADD COLUMN mitre_tactic TEXT")
+                if "mitre_technique" not in columns:
+                    conn.execute("ALTER TABLE incidents ADD COLUMN mitre_technique TEXT")
+                conn.commit()
+            except sqlite3.Error as e:
+                log.warning("Database migration for MITRE ATT&CK columns skipped/failed: %s", e)
+                
             log.info("Database initialized at %s", self.db_path)
         except sqlite3.Error as e:
             log.error("Failed to initialize database: %s", e)
@@ -286,11 +301,11 @@ class DatabaseManager:
             INSERT INTO incidents
                 (attack_type, severity, status, source_ip, username,
                  first_seen, last_seen, description, detection_rule,
-                 detection_reason, event_count, is_demo)
+                 detection_reason, mitre_tactic, mitre_technique, event_count, is_demo)
             VALUES
                 (:attack_type, :severity, :status, :source_ip, :username,
                  :first_seen, :last_seen, :description, :detection_rule,
-                 :detection_reason, :event_count, :is_demo)
+                 :detection_reason, :mitre_tactic, :mitre_technique, :event_count, :is_demo)
         """
         params = {
             "attack_type":      incident.get("attack_type", "UNKNOWN"),
@@ -303,6 +318,8 @@ class DatabaseManager:
             "description":      incident.get("description"),
             "detection_rule":   incident.get("detection_rule"),
             "detection_reason": incident.get("detection_reason"),
+            "mitre_tactic":     incident.get("mitre_tactic"),
+            "mitre_technique":  incident.get("mitre_technique"),
             "event_count":      incident.get("event_count", 0),
             "is_demo":          1 if incident.get("is_demo") else 0,
         }
