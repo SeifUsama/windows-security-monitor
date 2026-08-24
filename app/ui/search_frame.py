@@ -1,4 +1,4 @@
-﻿"""
+"""
 app/ui/search_frame.py
 -----------------------
 Advanced forensic search and filtering page.
@@ -11,7 +11,6 @@ import customtkinter as ctk
 from typing import TYPE_CHECKING, Dict, Any
 
 from app.ui.widgets.raw_event_viewer import RawEventViewer
-from app.reports.csv_exporter import export_events_to_csv
 
 if TYPE_CHECKING:
     from app.ui.app_window import AppWindow
@@ -92,12 +91,6 @@ class SearchFrame(ctk.CTkFrame):
             fg_color="#2a2a4a", hover_color="#3a3a5a",
             command=self._clear_form,
         ).pack(side="left")
-
-        ctk.CTkButton(
-            drop_row, text="📥 Export CSV", width=120,
-            fg_color="#28a745", hover_color="#1e7e34",
-            command=self._export_csv,
-        ).pack(side="right", padx=8)
 
         self._result_label = ctk.CTkLabel(
             drop_row, text="", font=ctk.CTkFont(size=10),
@@ -229,20 +222,5 @@ class SearchFrame(ctk.CTkFrame):
             self._tree.delete(item)
         self._result_label.configure(text="")
 
-    def _export_csv(self):
-        if not self._results:
-            messagebox.showinfo("Export", "Run a search first.")
-            return
-        path = filedialog.asksaveasfilename(
-            defaultextension=".csv",
-            filetypes=[("CSV", "*.csv")],
-            initialfile="search_results.csv",
-        )
-        if not path:
-            return
-        ok = export_events_to_csv(self._results, path)
-        if ok:
-            messagebox.showinfo("Export", f"Exported {len(self._results)} events to:\n{path}")
-        else:
-            messagebox.showerror("Export", "Export failed.")
+
 
